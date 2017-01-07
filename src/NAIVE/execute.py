@@ -70,16 +70,7 @@ def bellw(source, target, n_rep=12):
                 pd, pf, g, auc = [], [], [], []
                 for _ in xrange(n_rep):
                     _train, __test = weight_training(test_instance=tgt, training_instance=src)
-                    # set_trace()
                     actual, predicted, distribution = predict_defects(train=_train, test=__test)
-
-                    # loc = tgt["$loc"].values
-                    # loc = loc * 100 / np.max(loc)
-                    # recall, loc, au_roc = get_curve(loc, actual, predicted, distribution)
-                    # effort_plot(recall, loc,
-                    #             save_dest=os.path.abspath(os.path.join(root, "plot", "plots", tgt_name)),
-                    #             save_name=src_name)
-
                     p_d, p_f, p_r, rc, f_1, e_d, _g, auroc = abcd(actual, predicted, distribution)
                     set_trace()
                     pd.append(p_d)
