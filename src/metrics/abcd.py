@@ -2,11 +2,17 @@ from __future__ import division, print_function
 
 import numpy as np
 from sklearn.metrics import *
-from pdb import set_trace
+
+
+def stringify(lst):
+    try:
+        return [str(int(a)) for a in lst]
+    except ValueError:
+        return [str(a) for a in lst]
 
 
 def abcd(actual, predicted, distribution, as_percent=True):
-    # set_trace()
+
     """
     Confusion Matrix:
 
@@ -19,18 +25,7 @@ def abcd(actual, predicted, distribution, as_percent=True):
     `````````````````````````````
     """
 
-    def stringify(lst):
-        try:
-            return [str(int(a)) for a in lst]
-        except ValueError:
-            return [str(a) for a in lst]
-
-    # actual = stringify(actual)
-    # predicted = stringify(predicted)
     c_mtx = confusion_matrix(actual, predicted)
-
-    # set_trace()
-
 
     "Probablity of Detection: Pd"
     try:
@@ -60,13 +55,12 @@ def abcd(actual, predicted, distribution, as_percent=True):
     except ZeroDivisionError:
         f1 = 0
 
-    ed = np.sqrt(0.7 * (1 - p_d) ** 2 + 0.3 * p_f ** 2)
     e_d = 2 * p_d * (1 - p_f) / (1 + p_d - p_f)
     g = np.sqrt(p_d - p_d * p_f)  # Harmonic Mean between True positive rate and True negative rate
 
     try:
         auroc = round(roc_auc_score(actual, distribution), 2)
-    except:
+    except ValueError:
         auroc = 0
 
     if as_percent is True:

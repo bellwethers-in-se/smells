@@ -7,7 +7,7 @@ root = os.path.join(os.getcwd().split('src')[0], 'src/smells')
 if root not in sys.path:
     sys.path.append(root)
 
-from prediction.model import rf_model
+from oracle.model import rf_model
 from utils import *
 from metrics.abcd import abcd
 from mklaren.kernel.kinterface import Kinterface

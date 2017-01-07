@@ -7,7 +7,7 @@ if root not in sys.path:
     sys.path.append(root)
 
 import warnings
-from prediction.model import logistic_model, rf_model
+from oracle.model import logistic_model, rf_model
 from py_weka.classifier import classify
 from utils import *
 from metrics.abcd import abcd
@@ -37,13 +37,17 @@ def weight_training(test_instance, training_instance):
     return new_train[columns], new_test[columns]
 
 
-
 def predict_defects(train, test):
+    """
+    Perform Code-Smell Prediction
+
+    :param train:
+    :type train:
+    :param test:
+    :type test:
+    :return:
+    """
     actual = test[test.columns[-1]].values.tolist()
-    actual = [1 if act == "T" else 0 for act in actual]
-    # Binarize data
-    # set_trace()
-    # predicted, distr = nbayes(train, test)
     predicted, distr = rf_model(train, test)
     return actual, predicted, distr
 

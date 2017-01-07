@@ -1,111 +1,105 @@
-#! /Users/rkrsn/anaconda/bin/python
+from collections import Counter
 from pdb import set_trace
-from os import environ, getcwd
-from os import walk
-from os.path import expanduser
-from pdb import set_trace
-import sys
+from random import choice, uniform as rand
 
-# Update PYTHONPATH
-HOME = expanduser('~')
-axe = HOME + '/git/axe/axe/'  # AXE
-pystat = HOME + '/git/pystats/'  # PySTAT
-cwd = getcwd()  # Current Directory
-sys.path.extend([axe, pystat, cwd])
-
-from scipy.spatial.distance import euclidean
-from random import choice, seed as rseed, uniform as rand
+import numpy as np
 import pandas as pd
-from table import *
+from scipy.spatial.distance import euclidean
+from sklearn.neighbors import BallTree
+
+import warnings
+with warnings.catch_warnings():
+    # Shut those god damn warnings up!
+    warnings.filterwarnings("ignore")
 
 
-def SMOTE(data=None, k=5, atleast=100, atmost=100, bugIndx=2, resample=False):
+def SMOTE(data=None, atleast=50, atmost=101, a=None, b=None, k=1):
+    """
+    Synthetic Minority Oversampling Technique
+    """
 
-  def Bugs(tbl):
-    cells = [i.cells[-bugIndx] for i in tbl._rows]
-    return cells
+    def knn(a, b):
+        "k nearest neighbors"
+        b = np.array([bb[:-1] for bb in b])
+        tree = BallTree(b)
+        __, indx = tree.query(a[:-1], k)
 
-  def minority(data):
-    unique = list(set(sorted(Bugs(data))))
-    counts = len(unique) * [0]
-#     set_trace()
-    for n in xrange(len(unique)):
-      for d in Bugs(data):
-        if unique[n] == d:
-          counts[n] += 1
-    return unique, counts
+        return [b[i] for i in indx]
+        # set_trace()
+        # return sorted(b, key=lambda F: euclidean(a[:-1], F[:-1]))
 
-  def knn(one, two):
-    pdistVect = []
-#    set_trace()
-    for ind, n in enumerate(two):
-      pdistVect.append([ind, euclidean(one.cells[:-1], n.cells[:-1])])
-    indices = sorted(pdistVect, key=lambda F: F[1])
-    return [two[n[0]] for n in indices]
+    def kfn(me, my_lot, others):
+        "k farthest neighbors"
+        my_closest = None
+        return sorted(b, key=lambda F: euclidean(a[:-1], F[:-1]))
 
-  def extrapolate(one, two):
-    new = one
-#    set_trace()
-    if bugIndx == 2:
-      new.cells[3:-1] = [max(min(a, b),
-                             min(min(a, b) + rand() * (abs(a - b)),
-                                 max(a, b))) for a, b in zip(one.cells[3:-1],
-                                                             two.cells[3:-1])]
-      new.cells[-2] = int(new.cells[-2])
-    else:
-      new.cells[3:] = [min(a, b) + rand() * (abs(a - b)) for
-                       a, b in zip(one.cells[3:], two.cells[3:])]
-      new.cells[-1] = int(new.cells[-1])
-    return new
-
-  def populate(data):
-    newData = []
-    # reps = (len(data) - atleast)
-    for _ in xrange(atleast):
-      for one in data:
-        neigh = knn(one, data)[1:k + 1]
-        # If you're thinking the following try/catch statement is bad coding
-        # etiquette i i .
+    def extrapolate(one, two):
+        new = len(one) * [None]
+        new[:-1] = [a + rand(0, 1) * (b - a) for
+                    a, b in zip(one[:-1], two[:-1])]
         try:
-          two = choice(neigh)
-        except IndexError:
-          two = one
-        newData.append(extrapolate(one, two))
-    # data.extend(newData)
-    return newData
+            new[-1] = one[-1]
+        except ValueError:
+            new[-1] = one[-1]
+        return new
 
-  def depopulate(data):
-    if resample:
-      newer = []
-      for _ in xrange(atmost):
-        orig = choice(data)
-        newer.append(extrapolate(orig, knn(orig, data)[1]))
-      return newer
-    else:
-      return [choice(data) for _ in xrange(atmost)]
+    def populate(data, atleast):
+        newData = [dd.tolist() for dd in data]
+        if atleast - len(newData) < 0:
+            try:
+                return [choice(newData) for _ in xrange(atleast)]
+            except:
+                set_trace()
+        else:
+            for _ in xrange(atleast - len(newData)):
+                one = choice(data)
+                neigh = knn(one, data)[1:k + 1]
+                try:
+                    two = choice(neigh)
+                except IndexError:
+                    two = one
+                newData.append(extrapolate(one, two))
+            return newData
 
-  newCells = []
-  rseed(1)
-  unique, counts = minority(data)
-  rows = data._rows
-  for u, n in zip(unique, counts):
-    if n < atleast:
-      newCells.extend(populate([r for r in rows if r.cells[-2] == u]))
-    if n > atmost:
-      newCells.extend(depopulate([r for r in rows if r.cells[-2] == u]))
-    else:
-      newCells.extend([r for r in rows if r.cells[-2] == u])
+    def populate2(data1, data2):
+        newData = []
+        for _ in xrange(atleast):
+            for one in data1:
+                neigh = kfn(one, data)[1:k + 1]
+                try:
+                    two = choice(neigh)
+                except IndexError:
+                    two = one
+                newData.append(extrapolate(one, two))
+        return [choice(newData) for _ in xrange(atleast)]
 
-  return clone(data, rows=[k.cells for k in newCells])
+    def depopulate(data):
+        return [choice(data).tolist() for _ in xrange(atmost)]
+
+    newCells = []
+    klass = lambda df: df[df.columns[-1]]
+    count = Counter(klass(data))
+    major, minor = count.keys()
+    atleast = 10*count[minor]
+    atmost = 5*count[major]
+    for u in count.keys():
+        if u == minor:
+            newCells.extend(populate([r for r in data.as_matrix() if r[-1] == u], atleast=atleast))
+        if u == major:
+            newCells.extend(populate([r for r in data.as_matrix() if r[-1] == u], atleast=atmost))
+        else:
+            newCells.extend([r.tolist() for r in data.as_matrix() if r[-1] == u])
+    # set_trace()
+    return pd.DataFrame(newCells, columns=data.columns)
 
 
-def test_smote():
-  dir = '../data/camel/camel-1.6.csv'
-  Tbl = createTbl([dir], _smote=False)
-  newTbl = createTbl([dir], _smote=True)
-  print(len(Tbl._rows), len(newTbl._rows))
-  # for r in newTbl._rows:
-  #   print r.cells
+def __test_smote():
+    """
+    A test case goes here
+    :return:
+    """
+    pass
 
-if __name__ == '__main__':
-  test_smote()
+
+if __name__ == "__main__":
+    __test_smote()
