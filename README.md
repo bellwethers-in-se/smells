@@ -1,1 +1,2 @@
-# Bellwether
+# smells
+Bellwether Effect in Code Smells
