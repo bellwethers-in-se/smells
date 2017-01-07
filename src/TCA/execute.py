@@ -3,7 +3,7 @@ from __future__ import print_function, division
 import os
 import sys
 
-root = os.path.join(os.getcwd().split('src')[0], 'src/smells')
+root = os.path.join(os.getcwd().split('src')[0], 'src')
 if root not in sys.path:
     sys.path.append(root)
 
@@ -102,38 +102,34 @@ def sim(c_s, c_t, e=0):
 
 def smart_norm(src, tgt, c_s, c_t):
     """
-    ARE THESE NORMS CORRECT?? OPEN AN ISSUE REPORT TO VERIFY
     :param src:
     :param tgt:
     :param c_s:
     :param c_t:
     :return:
     """
-    try:  # !!GUARD: PLEASE REMOVE AFTER DEBUGGING!!
-        # Rule 1
-        if sim(c_s, c_t, e=0) == "S" and sim(c_s, c_t, e=-2) == "S":
-            return src, tgt
-
-        # Rule 2
-        elif sim(c_s, c_t, e=2) == "VL" or "VH" \
-                and sim(c_s, c_t, e=3) == "VL" or "VH" \
-                and sim(c_s, c_t, e=-1) == "VL" or "VH":
-            return df_norm(src), df_norm(tgt)
-
-        # Rule 3.1
-        elif sim(c_s, c_t, e=-2) == "VH" and c_s[-1] > c_t[-1] or \
-                                sim(c_s, c_t, e=-2) == "VL" and c_s[-1] < c_t[-1]:
-            return df_norm(src, type="normal"), df_norm(tgt)
-
-        # Rule 4
-        elif sim(c_s, c_t, e=-2) == "VH" and c_s[-1] < c_t[-1] or \
-                                sim(c_s, c_t, e=-2) == "VL" and c_s[-1] > c_t[-1]:
-            return df_norm(src), df_norm(tgt, type="normal")
-        else:
-            return df_norm(src, type="normal"), df_norm(tgt, type="normal")
-    except:
-        set_trace()
+    # Rule 1
+    if sim(c_s, c_t, e=0) == "S" and sim(c_s, c_t, e=-2) == "S":
         return src, tgt
+
+    # Rule 2
+    elif sim(c_s, c_t, e=2) == "VL" or "VH" \
+            and sim(c_s, c_t, e=3) == "VL" or "VH" \
+            and sim(c_s, c_t, e=-1) == "VL" or "VH":
+        return df_norm(src), df_norm(tgt)
+
+    # Rule 3.1
+    elif sim(c_s, c_t, e=-2) == "VH" and c_s[-1] > c_t[-1] or \
+                            sim(c_s, c_t, e=-2) == "VL" and c_s[-1] < c_t[-1]:
+        return df_norm(src, type="normal"), df_norm(tgt)
+
+    # Rule 4
+    elif sim(c_s, c_t, e=-2) == "VH" and c_s[-1] < c_t[-1] or \
+                            sim(c_s, c_t, e=-2) == "VL" and c_s[-1] > c_t[-1]:
+        return df_norm(src), df_norm(tgt, type="normal")
+
+    else:
+        return df_norm(src, type="normal"), df_norm(tgt, type="normal")
 
 
 def predict_defects(train, test):

@@ -3,7 +3,7 @@ from __future__ import print_function, division
 import os
 import sys
 
-root = os.path.join(os.getcwd().split('src')[0], 'src/smells')
+root = os.path.join(os.getcwd().split('src')[0], 'src')
 if root not in sys.path:
     sys.path.append(root)
 
