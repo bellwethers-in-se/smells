@@ -6,7 +6,7 @@ root = os.path.join(os.getcwd().split('src')[0], 'src')
 if root not in sys.path:
     sys.path.append(root)
 
-from oracle.model import nbayes, rf_model0
+from oracle.models import nbayes, rf_model0
 from py_weka.classifier import classify
 from utils import *
 from metrics.abcd import abcd

@@ -11,7 +11,7 @@ from old.Prediction import rforest
 from data.handler import get_all_projects
 from matching.match_metrics import match_metrics, list2dataframe
 from pdb import set_trace
-from oracle.model import rf_model, rf_model0
+from oracle.models import rf_model, rf_model0
 from old.methods1 import createTbl
 from old.stats import ABCD
 import pickle

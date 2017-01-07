@@ -7,7 +7,7 @@ root = os.path.join(os.getcwd().split('src')[0], 'src')
 if root not in sys.path:
     sys.path.append(root)
 
-from oracle.model import rf_model
+from oracle.models import rf_model
 from metrics.abcd import abcd
 from pdb import set_trace
 import numpy as np
@@ -66,34 +66,33 @@ def bellw(source, target, n_rep=12):
 
                 src = pandas.read_csv(src_path)
                 tgt = pandas.read_csv(tgt_path)
-
-                pd, pf, g, auc = [], [], [], []
+                pd, pf, pr, f1, g, auc = [], [], [], [], [], []
                 for _ in xrange(n_rep):
                     _train, __test = weight_training(test_instance=tgt, training_instance=src)
                     actual, predicted, distribution = predict_defects(train=_train, test=__test)
                     p_d, p_f, p_r, rc, f_1, e_d, _g, auroc = abcd(actual, predicted, distribution)
-                    set_trace()
+
                     pd.append(p_d)
                     pf.append(p_f)
+                    pr.append(p_f)
+                    f1.append(p_f)
                     g.append(_g)
                     auc.append(int(auroc))
-                stats.append([src_name, int(np.mean(pd)), int(np.std(pd)),
-                              int(np.mean(pf)), int(np.std(pf)),
-                              int(np.mean(auc)), int(np.std(auc))])  # ,
+
+                stats.append([src_name, int(np.mean(pd)), int(np.mean(pf)),
+                              int(np.mean(pr)), int(np.mean(f1)),
+                              int(np.mean(g)), int(np.mean(auc))])  # ,
 
         stats = pandas.DataFrame(sorted(stats, key=lambda lst: lst[-2], reverse=True),  # Sort by G Score
-                                 columns=["Name", "Pd (Mean)", "Pd (Std)",
-                                          "Pf (Mean)", "Pf (Std)",
-                                          "AUC (Mean)", "AUC (Std)"])  # ,
-        # "G (Mean)", "G (Std)"])
+                                 columns=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"])  # ,
+
         print(tabulate(stats,
-                       headers=["Name", "Pd (Mean)", "Pd (Std)",
-                                "Pf (Mean)", "Pf (Std)",
-                                "AUC (Mean)", "AUC (Std)"],
+                       headers=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"],
                        showindex="never",
                        tablefmt="fancy_grid"))
 
         result.update({tgt_name: stats})
+
     return result
 
 
