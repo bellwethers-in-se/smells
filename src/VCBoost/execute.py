@@ -245,7 +245,7 @@ def vcb(source, target, verbose=False, n_rep=12):
         stats = pandas.DataFrame(sorted(stats, key=lambda lst: lst[-2], reverse=True),  # Sort by G Score
                                  columns=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"])  # ,
 
-        if verbose: print(tabulate(stats,
+        if verbose: if verbose: print(tabulate(stats,
                                    headers=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"],
                                    showindex="never",
                                    tablefmt="fancy_grid"))

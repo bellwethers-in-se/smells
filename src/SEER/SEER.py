@@ -232,7 +232,7 @@ def seer(source, target, verbose=False, n_rep=20, n_redo=5):
                                           "Pf (Mean)", "Pf (Std)",
                                           "AUC (Mean)", "AUC (Std)"])  # ,
         # "G (Mean)", "G (Std)"])
-        print(tabulate(stats,
+        if verbose: print(tabulate(stats,
                        headers=["Name", "Pd (Mean)", "Pd (Std)",
                                 "Pf (Mean)", "Pf (Std)",
                                 "AUC (Mean)", "AUC (Std)"],
