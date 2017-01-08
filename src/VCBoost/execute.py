@@ -9,7 +9,6 @@ if root not in sys.path:
 
 from utils import *
 from metrics.abcd import abcd
-from metrics.recall_vs_loc import get_curve
 import numpy as np
 from collections import Counter
 import pandas
@@ -36,6 +35,7 @@ def get_weights(train_set, maxs, mins):
                          zip(mins, train_set.ix[i].values[:-1], maxs)]) / len(
                         train_set.columns[:-1])))
     return s_i
+
 
 def weight_training(train, test, verbose=False):
     def train_validation_split():
@@ -208,7 +208,7 @@ def predict_defects(test, weights, classifiers):
     return actuals, predicted, distribution
 
 
-def vcb(source, target, varbose=False, n_rep=12):
+def vcb(source, target, verbose=False, n_rep=12):
     """
     TNB: Transfer Naive Bayes
     :param source:
@@ -245,10 +245,10 @@ def vcb(source, target, varbose=False, n_rep=12):
         stats = pandas.DataFrame(sorted(stats, key=lambda lst: lst[-2], reverse=True),  # Sort by G Score
                                  columns=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"])  # ,
 
-        print(tabulate(stats,
-                       headers=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"],
-                       showindex="never",
-                       tablefmt="fancy_grid"))
+        if verbose: print(tabulate(stats,
+                                   headers=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"],
+                                   showindex="never",
+                                   tablefmt="fancy_grid"))
 
         result.update({tgt_name: stats})
 
@@ -258,7 +258,7 @@ def vcb(source, target, varbose=False, n_rep=12):
 def tnb_jur():
     all = get_all_datasets()
     for name, paths in all.iteritems():
-        vcb(paths, paths, varbose=False, n_rep=10)
+        vcb(paths, paths, verbose=False, n_rep=10)
         print("\n\n")
 
 

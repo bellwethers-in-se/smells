@@ -176,7 +176,7 @@ def predict_defects(train, test, weka=False):
     return actual, predicted, distr
 
 
-def seer(source, target, varbose=False, n_rep=20, n_redo=5):
+def seer(source, target, verbose=False, n_rep=20, n_redo=5):
     """
     seer: Causal Inference Learning
     :param source:
@@ -253,7 +253,7 @@ def seer_jur():
     from data.handler import get_all_projects
     all = get_all_projects()
     apache = all["Apache"]
-    return seer(apache, apache, varbose=False, n_rep=10, n_redo=5)
+    return seer(apache, apache, verbose=False, n_rep=10, n_redo=5)
 
 
 if __name__ == "__main__":

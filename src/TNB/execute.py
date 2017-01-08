@@ -64,7 +64,7 @@ def predict_defects(train, test):
     return actual, predicted, distr
 
 
-def tnb(source, target, varbose=False, n_rep=12):
+def tnb(source, target, verbose=False, n_rep=12):
     """
     TNB: Transfer Naive Bayes
     :param source:
@@ -116,7 +116,7 @@ def tnb(source, target, varbose=False, n_rep=12):
 def tnb_jur():
     all = get_all_datasets()
     for name, paths in all.iteritems():
-        tnb(paths, paths, varbose=False, n_rep=10)
+        tnb(paths, paths, verbose=False, n_rep=10)
         print("\n\n")
         # set_trace()
 
