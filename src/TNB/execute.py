@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+
 import os
 import sys
 
@@ -6,25 +7,14 @@ root = os.path.join(os.getcwd().split('src')[0], 'src')
 if root not in sys.path:
     sys.path.append(root)
 
-import warnings
-from oracle.models import nbayes, rf_model
-from py_weka.classifier import classify
+from oracle.models import nbayes
 from utils import *
 from metrics.abcd import abcd
-from metrics.recall_vs_loc import get_curve
 from pdb import set_trace
 import numpy as np
-from scipy.spatial.distance import pdist, squareform
 import pandas
-from plot.effort_plot import effort_plot
 from tabulate import tabulate
 from datasets.handler2 import get_all_datasets
-
-import warnings
-
-with warnings.catch_warnings():
-    # Shut those god damn warnings up!
-    warnings.filterwarnings("ignore")
 
 
 def target_details(test_set):
@@ -41,7 +31,7 @@ def get_weights(train_set, test_set, maxs, mins):
     k = len(train_set.columns)
     w_i = []
     for i in xrange(len(train_set)):
-        s = np.sum([1 if lo <= val < hi else 0 for lo, val, hi in zip(mins, train_set.ix[i].values, maxs)])/k
+        s = np.sum([1 if lo <= val < hi else 0 for lo, val, hi in zip(mins, train_set.ix[i].values, maxs)]) / k
         w_i.append((k * s * mass) / (k - s + 1) ** 2)
     return w_i
 
@@ -61,37 +51,20 @@ def weight_training(weights, training_instance, test_instance):
 
     new_test[tgt[-1]] = test_instance[tgt[-1]]
     new_test.dropna(axis=1, inplace=True)
-    columns = list(set(tgt[:-1]).intersection(new_test.columns[:-1]))+[tgt[-1]]
+    columns = list(set(tgt[:-1]).intersection(new_test.columns[:-1])) + [tgt[-1]]
     return new_train[columns], new_test[columns]
 
 
-def predict_defects(train, test, weka=False):
+def predict_defects(train, test):
+    """
+    Prediction scheme
+    """
     actual = test[test.columns[-1]].values.tolist()
-    actual = [1 if act == "T" else 0 for act in actual]
-    if weka:
-        train.to_csv(root + '/TNB/tmp/train.csv', index=False)
-        test.to_csv(root + '/TNB/tmp/test.csv', index=False)
-
-        __, distr = classify(train=os.path.abspath(root + '/TNB/tmp/train.csv'),
-                             test=os.path.abspath(root + '/TNB/tmp/test.csv'),
-                             name="rf", tuning=False)
-
-        # set_trace()
-        predicted = [1 if d > 0.6 else 0 for d in distr]
-
-        # Remove temporary csv files to avoid conflicts
-        os.remove(root + '/TNB/tmp/train.csv')
-        os.remove(root + '/TNB/tmp/test.csv')
-
-    else:
-        # Binarize data
-        # set_trace()
-        predicted, distr = nbayes(train, test)
-        # predicted, distr = rf_model(train, test)
+    predicted, distr = nbayes(train, test)
     return actual, predicted, distr
 
 
-def tnb(source, target, n_rep=12):
+def tnb(source, target, varbose=False, n_rep=12):
     """
     TNB: Transfer Naive Bayes
     :param source:
@@ -100,54 +73,38 @@ def tnb(source, target, n_rep=12):
     :return: result
     """
     result = dict()
-    plot_data =[("Xalan", "Log4j", "Lucene", "Poi", "Velocity")]
     for tgt_name, tgt_path in target.iteritems():
         stats = []
-        charts = []
         print("{} \r".format(tgt_name[0].upper() + tgt_name[1:]))
         val = []
         for src_name, src_path in source.iteritems():
             if not src_name == tgt_name:
-                # print("{}  \r".format(src_name[0].upper() + src_name[1:]))
                 src = pandas.read_csv(src_path)
                 tgt = pandas.read_csv(tgt_path)
-                pd, pf, g, auc = [], [], [], []
+                pd, pf, pr, f1, g, auc = [], [], [], [], [], []
                 for _ in xrange(n_rep):
                     lo, hi, test_mass = target_details(tgt)
                     weights = get_weights(maxs=hi, mins=lo, train_set=src, test_set=tgt)
                     _train, __test = weight_training(weights=weights, training_instance=src, test_instance=tgt)
-                    set_trace()
                     actual, predicted, distribution = predict_defects(train=_train, test=__test)
+                    p_d, p_f, p_r, rc, f_1, e_d, _g, auroc = abcd(actual, predicted, distribution)
 
-
-                    # loc = tgt["$loc"].values
-                    # loc = loc * 100 / np.max(loc)
-                    # recall, loc, au_roc = get_curve(loc, actual, predicted, distribution)
-                    # effort_plot(recall, loc,
-                    #             save_dest=os.path.abspath(os.path.join(root, "plot", "plots", tgt_name)),
-                    #             save_name=src_name)
-
-                    p_d, p_f, p_r, rc, f_1, e_d, _g, auroc = abcd(actual, predicted, distribution, threshold=0.4)
-
-                    # set_trace()
                     pd.append(p_d)
                     pf.append(p_f)
-                    g.append(f_1)
+                    pr.append(p_r)
+                    f1.append(f_1)
+                    g.append(_g)
                     auc.append(int(auroc))
-                stats.append([src_name, int(np.mean(pd)), int(np.std(pd)),
-                              int(np.mean(pf)), int(np.std(pf)),
-                              int(np.mean(g)), int(np.std(g))])  # ,
-                # int(np.mean(g)), int(np.std(g))])
-                # print("")
+
+                stats.append([src_name, int(np.mean(pd)), int(np.mean(pf)),
+                              int(np.mean(pr)), int(np.mean(f1)),
+                              int(np.mean(g)), int(np.mean(auc))])  # ,
+
         stats = pandas.DataFrame(sorted(stats, key=lambda lst: lst[-2], reverse=True),  # Sort by G Score
-                                 columns=["Name", "Pd (Mean)", "Pd (Std)",
-                                          "Pf (Mean)", "Pf (Std)",
-                                          "F1 (Mean)", "F1 (Std)"])  # ,
-        # "G (Mean)", "G (Std)"])
+                                 columns=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"])  # ,
+
         print(tabulate(stats,
-                       headers=["Name", "Pd (Mean)", "Pd (Std)",
-                                "Pf (Mean)", "Pf (Std)",
-                                "F1 (Mean)", "F1 (Std)"],
+                       headers=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"],
                        showindex="never",
                        tablefmt="fancy_grid"))
 
@@ -159,10 +116,9 @@ def tnb(source, target, n_rep=12):
 def tnb_jur():
     all = get_all_datasets()
     for name, paths in all.iteritems():
-        tnb(paths, paths, n_rep=10)
+        tnb(paths, paths, varbose=False, n_rep=10)
         print("\n\n")
         # set_trace()
-
 
 
 if __name__ == "__main__":

@@ -47,7 +47,7 @@ def execute(project_pairs):
     :return:
     """
     source, target, count = project_pairs
-    result = tca_plus(source, target, n_rep=30)
+    result = tca_plus(source, target, varbose=False, n_rep=30)
     dump_json(result,  dir='json', fname=str(count))
 
 

@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+
 import os
 import sys
 
@@ -6,20 +7,17 @@ root = os.path.join(os.getcwd().split('src')[0], 'src')
 if root not in sys.path:
     sys.path.append(root)
 
-from oracle.models import nbayes, rf_model0
-from py_weka.classifier import classify
 from utils import *
 from metrics.abcd import abcd
 from metrics.recall_vs_loc import get_curve
-from pdb import set_trace
 import numpy as np
 from collections import Counter
 import pandas
-from plot.effort_plot import effort_plot
 from tabulate import tabulate
 from random import random as rand, choice
 from sklearn.svm import LinearSVC
 from sklearn.metrics import roc_auc_score
+from datasets.handler2 import get_all_datasets
 
 
 def target_details(test_set):
@@ -39,11 +37,6 @@ def get_weights(train_set, maxs, mins):
                         train_set.columns[:-1])))
     return s_i
 
-
-def svm_train(samples):
-    return
-
-
 def weight_training(train, test, verbose=False):
     def train_validation_split():
         """ Split training data into X_train and X_validation"""
@@ -58,7 +51,7 @@ def weight_training(train, test, verbose=False):
         wt_array = pd.DataFrame(np.array(N * [weight]).T, columns=dframe.columns[:-1])
         new_dframe = dframe.multiply(wt_array)
         new_dframe[dframe.columns[-1]] = dframe[dframe.columns[-1]]
-        return new_dframe[dframe.columns]
+        return new_dframe[dframe.columns].dropna(axis=1, inplace=False)
 
     def ensemble_measure(lst, classifiers, weigths):
 
@@ -66,7 +59,7 @@ def weight_training(train, test, verbose=False):
             import numpy as np
             s = np.sum(lst)
             arr = np.array(lst) / s
-            return arr
+            return np.nan_to_num(arr)
 
         tst = pd.DataFrame([t[0] for t in lst], columns=train.columns)
         X = tst[tst.columns[:-1]]
@@ -78,7 +71,7 @@ def weight_training(train, test, verbose=False):
             y_hat.append(clf.decision_function(X))
 
         if len(y_hat) == 1:
-            y = [1 if p is "T" else -1 for p in y]
+            y = [1 if p == True else -1 for p in y]
             auc = roc_auc_score(y, y_hat[0])
 
         else:
@@ -86,8 +79,11 @@ def weight_training(train, test, verbose=False):
                 y_pred.append([wgt * p for p in pred])
 
             y_pred = np.sum(np.array(y_pred).T, axis=1)
-            y = [1 if p is "T" else -1 for p in y]
-            auc = roc_auc_score(y, y_pred)
+            y = [1 if p == True else -1 for p in y]
+            try:
+                auc = roc_auc_score(y, y_pred)
+            except:
+                set_trace()
         return auc
 
     def resample(train0, weights):
@@ -155,8 +151,10 @@ def weight_training(train, test, verbose=False):
         if verbose: print("Interation number: {}".format(iter))
         train1, w = resample(train1, w)
         sim = [t[1] for t in train1]
-        try:trn = pd.DataFrame([t[0] for t in train1], columns=train.columns)
-        except:trn = pd.DataFrame([t for t in train1], columns=train.columns)
+        try:
+            trn = pd.DataFrame([t[0] for t in train1], columns=train.columns)
+        except:
+            trn = pd.DataFrame([t for t in train1], columns=train.columns)
         w_trn = multiply_dframe(trn, w)
         # Create an SVM model
         X = w_trn[w_trn.columns[:-1]]
@@ -184,7 +182,7 @@ def predict_defects(test, weights, classifiers):
         import numpy as np
         s = np.sum(lst)
         arr = np.array(lst) / s
-        return arr
+        return np.nan_to_num(arr)
 
     X = test[test.columns[:-1]]
     y = test[test.columns[-1]]
@@ -203,13 +201,14 @@ def predict_defects(test, weights, classifiers):
             y_pred.append([wgt * p for p in pred])
 
         distribution = np.sum(np.array(y_pred).T, axis=1)
+        set_trace()
         actuals = [1 if p is "T" else 0 for p in y]
         predicted = [1 if p > 0 else 0 for p in distribution]
 
     return actuals, predicted, distribution
 
 
-def vcb(source, target, n_rep=12):
+def vcb(source, target, varbose=False, n_rep=12):
     """
     TNB: Transfer Naive Bayes
     :param source:
@@ -218,58 +217,49 @@ def vcb(source, target, n_rep=12):
     :return: result
     """
     result = dict()
-    plot_data = [("Xalan", "Log4j", "Lucene", "Poi", "Velocity")]
     for tgt_name, tgt_path in target.iteritems():
         stats = []
-        charts = []
         print("{} \r".format(tgt_name[0].upper() + tgt_name[1:]))
         val = []
         for src_name, src_path in source.iteritems():
             if not src_name == tgt_name:
-                # print("{}  \r".format(src_name[0].upper() + src_name[1:]))
-                src = list2dataframe(src_path.data)
-                tgt = list2dataframe(tgt_path.data)
-                pd, pf, g, auc = [], [], [], []
+                src = pandas.read_csv(src_path)
+                tgt = pandas.read_csv(tgt_path)
+                pd, pf, pr, f1, g, auc = [], [], [], [], [], []
                 for _ in xrange(n_rep):
                     _train, clf_w, classifiers = weight_training(train=src, test=tgt)
                     actual, predicted, distribution = predict_defects(tgt, clf_w, classifiers)
-                    loc = tgt["$loc"].values
-                    loc = loc * 100 / np.max(loc)
-                    recall, loc, au_roc = get_curve(loc, actual, predicted, distribution)
-                    effort_plot(recall, loc,
-                                save_dest=os.path.abspath(os.path.join(root, "plot", "plots", tgt_name)),
-                                save_name=src_name)
                     p_d, p_f, p_r, rc, f_1, e_d, _g, auroc = abcd(actual, predicted, distribution)
 
                     pd.append(p_d)
                     pf.append(p_f)
+                    pr.append(p_r)
+                    f1.append(f_1)
                     g.append(_g)
                     auc.append(int(auroc))
-                stats.append([src_name, int(np.mean(pd)), int(np.std(pd)),
-                              int(np.mean(pf)), int(np.std(pf)),
-                              int(np.mean(auc)), int(np.std(auc))])
+
+                stats.append([src_name, int(np.mean(pd)), int(np.mean(pf)),
+                              int(np.mean(pr)), int(np.mean(f1)),
+                              int(np.mean(g)), int(np.mean(auc))])  # ,
 
         stats = pandas.DataFrame(sorted(stats, key=lambda lst: lst[-2], reverse=True),  # Sort by G Score
-                                 columns=["Name", "Pd (Mean)", "Pd (Std)",
-                                          "Pf (Mean)", "Pf (Std)",
-                                          "AUC (Mean)", "AUC (Std)"])  # ,
-        # "G (Mean)", "G (Std)"])
+                                 columns=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"])  # ,
+
         print(tabulate(stats,
-                       headers=["Name", "Pd (Mean)", "Pd (Std)",
-                                "Pf (Mean)", "Pf (Std)",
-                                "AUC (Mean)", "AUC (Std)"],
+                       headers=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"],
                        showindex="never",
                        tablefmt="fancy_grid"))
 
         result.update({tgt_name: stats})
+
     return result
 
 
 def tnb_jur():
-    from data.handler import get_all_projects
-    all = get_all_projects()
-    apache = all["Apache"]
-    return vcb(apache, apache, n_rep=1)
+    all = get_all_datasets()
+    for name, paths in all.iteritems():
+        vcb(paths, paths, varbose=False, n_rep=10)
+        print("\n\n")
 
 
 if __name__ == "__main__":

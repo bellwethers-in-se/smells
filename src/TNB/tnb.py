@@ -190,7 +190,7 @@ def smart_norm(src, tgt, c_s, c_t):
         return src, tgt
 
 
-def tca_plus(source, target, n_rep=12):
+def tca_plus(source, target, varbose=False, n_rep=12):
     """
     TCA: Transfer Component Analysis
     :param source:
@@ -265,7 +265,7 @@ def get_all_datasets():
 
 def tca_jur():
     for smell_name, datasets in get_all_datasets().iteritems():
-        result = tca_plus(source=datasets, target=datasets, n_rep=1)
+        result = tca_plus(source=datasets, target=datasets, varbose=False, n_rep=1)
         print(tabulate(result))
 
 

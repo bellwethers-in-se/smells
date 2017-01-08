@@ -81,7 +81,7 @@ def predict_defects(train, test, weka=True):
     return actual, predicted, distr
 
 
-def tnb(source, target, n_rep=12):
+def tnb(source, target, varbose=False, n_rep=12):
     """
     TNB: Transfer Naive Bayes
     :param source:
@@ -148,7 +148,7 @@ def tnb_jur():
     from data.handler import get_all_projects
     all = get_all_projects()
     apache = all["Apache"]
-    return tnb(apache, apache, n_rep=1)
+    return tnb(apache, apache, varbose=False, n_rep=1)
 
 
 if __name__ == "__main__":
