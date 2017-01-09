@@ -187,7 +187,7 @@ def seer(source, target, verbose=False, n_rep=20, n_redo=5):
     t0 = time()
     for tgt_name, tgt_path in target.iteritems():
         stats = []
-        print("{} \r".format(tgt_name[0].upper() + tgt_name[1:]))
+        if verbose: print("{} \r".format(tgt_name[0].upper() + tgt_name[1:]))
         for src_name, src_path in source.iteritems():
             if not src_name == tgt_name:
                 src = list2dataframe(src_path.data)

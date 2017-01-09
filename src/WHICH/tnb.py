@@ -94,7 +94,7 @@ def tnb(source, target, verbose=False, n_rep=12):
     for tgt_name, tgt_path in target.iteritems():
         stats = []
         charts = []
-        print("{} \r".format(tgt_name[0].upper() + tgt_name[1:]))
+        if verbose: print("{} \r".format(tgt_name[0].upper() + tgt_name[1:]))
         val = []
         for src_name, src_path in source.iteritems():
             if not src_name == tgt_name:

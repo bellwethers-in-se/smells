@@ -219,7 +219,7 @@ def vcb(source, target, verbose=False, n_rep=12):
     result = dict()
     for tgt_name, tgt_path in target.iteritems():
         stats = []
-        print("{} \r".format(tgt_name[0].upper() + tgt_name[1:]))
+        if verbose: print("{} \r".format(tgt_name[0].upper() + tgt_name[1:]))
         val = []
         for src_name, src_path in source.iteritems():
             if not src_name == tgt_name:
@@ -245,7 +245,7 @@ def vcb(source, target, verbose=False, n_rep=12):
         stats = pandas.DataFrame(sorted(stats, key=lambda lst: lst[-2], reverse=True),  # Sort by G Score
                                  columns=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"])  # ,
 
-        if verbose: if verbose: print(tabulate(stats,
+        if verbose: print(tabulate(stats,
                                    headers=["Name", "Pd", "Pf", "Prec", "F1", "G", "AUC"],
                                    showindex="never",
                                    tablefmt="fancy_grid"))
