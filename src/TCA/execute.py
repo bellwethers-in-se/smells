@@ -39,7 +39,7 @@ def get_kernel_matrix(dframe, n_dim=15):
     return g_nystrom
 
 
-def map_transform(src, tgt, n_components=2):
+def map_transform(src, tgt, n_components=5):
     """
     Run a map and transform x and y onto a new space using TCA
     :param src: IID samples

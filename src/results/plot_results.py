@@ -4,6 +4,7 @@ from glob import glob
 from pdb import set_trace
 from pandas import DataFrame, read_csv
 import numpy as np
+from scipy.stats import iqr
 from tabulate import tabulate
 
 
@@ -12,6 +13,22 @@ def list_communities():
         print("Method: {}".format(var.upper()))
         files = glob(os.path.abspath(os.path.join(".", "godclass", var, "*.csv")))
         yield files
+
+
+def find_median(dframe):
+    return [int(np.median([v for k, v in enumerate(dframe.ix[i].values) if k != i])) for i in
+            xrange(len(dframe))]
+
+
+def find_iqr(dframe):
+    return [int(iqr([v for k, v in enumerate(dframe.ix[i].values) if k != i])) for i
+            in
+            xrange(len(dframe))]
+
+def find_hi_lo(dframe):
+    return [int(iqr([v for k, v in enumerate(dframe.ix[i].values) if k != i])) for i
+            in
+            xrange(len(dframe))]
 
 
 def find_mean(dframe):
@@ -29,6 +46,7 @@ def find_std(dframe):
 def plot_stuff():
     pd_list = {}
     compare_tl = []
+    compare_tl_iqr  = []
     compare_tl_head = []
     for vars in list_communities():
         for var in vars:
@@ -44,26 +62,42 @@ def plot_stuff():
                 if i < idx:
                     stats[i, idx] = val
                 if i > idx:
-                    stats[i+1, idx] = val
+                    stats[i + 1, idx] = val
 
         stats = DataFrame(stats, columns=keys, index=keys)
         # stats["Mean"] = stats.median(axis=0)
         # set_trace()
+        # stats["Median"] = find_median(stats)
+        # stats["IQR"] = find_iqr(stats)
+
+        # stats = stats.sort_values(by="Median", axis=0, ascending=False, inplace=False)
+
         stats["Mean"] = find_mean(stats)
         stats["Std"] = find_std(stats)
         stats = stats.sort_values(by="Mean", axis=0, ascending=False, inplace=False)
+
         print(tabulate(stats, showindex=True, headers=stats.columns, tablefmt="fancy_grid"))
         print("\n")
+
         save_path = os.path.abspath("/".join(var.split("/")[:-2]))
-        method = var.split("/")[-2]+".xlsx"
-        stats.to_excel(os.path.join(save_path, method))
-        compare_tl.append(stats.sort_index(inplace=False)["Mean"].values.tolist())
-        compare_tl_head.append(method)
-    # set_trace()
-    compare_tl= DataFrame(np.array(compare_tl).T, columns=compare_tl_head, index=stats.index.sort_values())
-    save_path_2 = os.path.join(os.path.abspath("/".join(var.split("/")[:-3])), os.path.abspath("".join(var.split("/")[-3]))+".xlsx")
+        method = var.split("/")[-2]
+        stats.to_excel(os.path.join(save_path, method+".xlsx"))
+
+        try:
+            compare_tl.append(stats.sort_index(inplace=False)["Mean"].values.tolist())
+            compare_tl.append(stats.sort_index(inplace=False)["Std"].values.tolist())
+            compare_tl_iqr.append(stats.sort_index(inplace=False)["Std"].values.tolist())
+        except:
+            compare_tl.append(stats.sort_index(inplace=False)["Median"].values.tolist())
+            compare_tl.append(stats.sort_index(inplace=False)["IQR"].values.tolist())
+            compare_tl_iqr.append(stats.sort_index(inplace=False)["IQR"].values.tolist())
+
+        compare_tl_head.extend([method+" (Median)", method+" (IQR)"])
+
+    compare_tl = DataFrame(np.array(compare_tl).T, columns=compare_tl_head, index=stats.index.sort_values())
+    save_path_2 = os.path.join(os.path.abspath("/".join(var.split("/")[:-3])),
+                               os.path.abspath("".join(var.split("/")[-3])) + ".xlsx")
     compare_tl.to_excel(save_path_2)
-    # set_trace()
 
 
 if __name__ == "__main__":

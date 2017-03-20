@@ -30,18 +30,18 @@ def deploy(elem):
 def run():
     all = get_all_datasets()
     dir_names = {
-        "bell": bellw
-        , "tca": tca_plus
+        "bell": bellw ,
+        "tca": tca_plus
         , "tnb": tnb
     }
     tasks = []
     for data, project in all.iteritems():
-            if data == "LongMethod":
-                for f_name, method in dir_names.iteritems():
-                    save_path = os.path.join(root, "results", data.lower(), f_name.lower())
-                    if os.path.exists(save_path) is False:
-                        os.makedirs(save_path)
-                    tasks.append(((data, project), (f_name, method)))
+        if data == "LongMethod":
+            for f_name, method in dir_names.iteritems():
+                save_path = os.path.join(root, "results", data.lower(), f_name.lower())
+                if os.path.exists(save_path) is False:
+                    os.makedirs(save_path)
+                tasks.append(((data, project), (f_name, method)))
 
     pool = multiprocessing.Pool(processes=4)
     pool.map(deploy, tasks)
